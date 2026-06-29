@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+outputs/
+logs/
+
+benchmark_results.json
+benchmark_warm_results.json
+bench_*.pdf
+sample.png
+share.html
+
+.DS_Store
+Thumbs.db
