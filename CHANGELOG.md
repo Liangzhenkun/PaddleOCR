@@ -6,7 +6,7 @@ The format is inspired by Keep a Changelog, with lightweight version notes for t
 
 ## [Unreleased]
 
-- Reserve this section for future public changes before the next tagged release.
+- Sanitized the public README visuals and removed screenshots that exposed local desktop context.
 
 ## [0.2.0] - 2026-06-30
 
@@ -14,7 +14,7 @@ The format is inspired by Keep a Changelog, with lightweight version notes for t
 
 - Public-facing `LICENSE` file using Apache-2.0
 - Improved bilingual README for GitHub visitors
-- Real project screenshots under `docs/screenshots/`
+- Safe public preview assets under `docs/`
 - Release / changelog guidance in the README
 - Local log entry point in the GUI (`Open Log`)
 

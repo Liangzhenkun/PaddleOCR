@@ -1,0 +1,58 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="640" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="760" y1="110" x2="1110" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E2E8F0"/>
+    </linearGradient>
+    <filter id="shadow" x="690" y="70" width="470" height="430" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#020617" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="640" rx="28" fill="url(#bg)"/>
+  <circle cx="1130" cy="110" r="120" fill="#60A5FA" fill-opacity="0.14"/>
+  <circle cx="170" cy="540" r="180" fill="#38BDF8" fill-opacity="0.12"/>
+
+  <text x="82" y="150" fill="white" font-family="Segoe UI, Arial, sans-serif" font-size="54" font-weight="700">PaddleOCR Desktop Tool</text>
+  <text x="82" y="202" fill="#DBEAFE" font-family="Segoe UI, Arial, sans-serif" font-size="26">
+    Local OCR, structured parsing, Markdown export, and official model switching
+  </text>
+
+  <rect x="82" y="250" width="172" height="46" rx="23" fill="#EFF6FF" fill-opacity="0.16"/>
+  <text x="112" y="279" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600">Windows GUI</text>
+
+  <rect x="272" y="250" width="168" height="46" rx="23" fill="#EFF6FF" fill-opacity="0.16"/>
+  <text x="302" y="279" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600">GPU Local Run</text>
+
+  <rect x="458" y="250" width="195" height="46" rx="23" fill="#EFF6FF" fill-opacity="0.16"/>
+  <text x="488" y="279" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600">Markdown Export</text>
+
+  <text x="82" y="352" fill="#BFDBFE" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="600">Included model options</text>
+  <text x="82" y="395" fill="#FFFFFF" font-family="Consolas, monospace" font-size="23">PP-OCRv5</text>
+  <text x="250" y="395" fill="#FFFFFF" font-family="Consolas, monospace" font-size="23">PP-StructureV3</text>
+  <text x="500" y="395" fill="#FFFFFF" font-family="Consolas, monospace" font-size="23">PaddleOCR-VL-1.6</text>
+
+  <text x="82" y="470" fill="#DBEAFE" font-family="Segoe UI, Arial, sans-serif" font-size="24">
+    Built for local document workflows without publishing private files to a web UI
+  </text>
+
+  <g filter="url(#shadow)">
+    <rect x="730" y="110" width="390" height="350" rx="28" fill="url(#panel)"/>
+    <rect x="760" y="144" width="160" height="18" rx="9" fill="#CBD5E1"/>
+    <rect x="760" y="186" width="330" height="56" rx="14" fill="#F8FAFC"/>
+    <rect x="780" y="205" width="110" height="18" rx="9" fill="#1D4ED8" fill-opacity="0.92"/>
+    <rect x="760" y="270" width="240" height="52" rx="14" fill="#EFF6FF"/>
+    <rect x="1012" y="270" width="78" height="52" rx="14" fill="#DBEAFE"/>
+    <rect x="760" y="344" width="126" height="38" rx="12" fill="#1D4ED8"/>
+    <rect x="900" y="344" width="190" height="38" rx="12" fill="#E2E8F0"/>
+    <text x="778" y="157" fill="#0F172A" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="600">Model Selection</text>
+    <text x="778" y="219" fill="white" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">PP-StructureV3</text>
+    <text x="777" y="302" fill="#0F172A" font-family="Segoe UI, Arial, sans-serif" font-size="17">Language: English</text>
+    <text x="794" y="368" fill="white" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700">Run</text>
+    <text x="930" y="368" fill="#334155" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="600">Open Markdown</text>
+  </g>
+</svg>

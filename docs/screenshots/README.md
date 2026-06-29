@@ -1,11 +1,15 @@
-# Screenshot Placeholders
+# Screenshot Notes
 
-Recommended screenshot filenames for the GitHub homepage:
+Only sanitized public-facing images should be stored in this folder.
 
-- `main-window.png`
-- `model-selector.png`
-- `result-preview.png`
-- `output-folder.png`
+Allowed:
 
-These files are intentionally not included yet. Add real screenshots here later,
-then reference them from the root `README.md`.
+- clean window-only crops
+- interface snippets with no desktop background
+- no file explorer paths
+- no personal filenames
+- no local drive letters or private directories
+
+Current public asset:
+
+- `model-selector-safe.png`

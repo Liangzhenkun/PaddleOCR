@@ -1,6 +1,8 @@
 # PaddleOCR Desktop Tool
 
-Local Windows desktop GUI for document OCR and structured parsing, built on top of official PaddleOCR pipelines.
+![PaddleOCR Desktop Tool Banner](docs/hero.svg)
+
+Local Windows GUI for OCR and structured document parsing, built around official PaddleOCR pipelines and designed for local use.
 
 [中文](#中文) | [English](#english)
 
@@ -8,67 +10,59 @@ Local Windows desktop GUI for document OCR and structured parsing, built on top 
 
 ### Overview
 
-This project wraps official PaddleOCR pipelines in a lightweight Tkinter desktop app so you can run OCR locally with a GPU and export clean Markdown/JSON results.
+This project packages official PaddleOCR workflows into a lightweight Tkinter desktop app for Windows. It is aimed at users who want a simple local GUI for image/PDF recognition, Markdown export, model switching, and update checks without uploading files to a web service.
 
-Supported official model options:
+### Features
 
-- `PP-OCRv5`: plain OCR, fastest
-- `PP-StructureV3`: structured parsing, recommended default
-- `PaddleOCR-VL`
-- `PaddleOCR-VL-1.5`
-- `PaddleOCR-VL-1.6`
-
-### Highlights
-
-- Local desktop GUI for image and PDF OCR
+- Local OCR and structured parsing for images and PDFs
 - Markdown and JSON export
-- Official model selector
-- Upstream PaddleOCR version check on startup
-- Pure window launch mode on Windows
-- Logs and generated outputs stay local and are excluded from Git
+- Official model selector inside the GUI
+- Startup version check against the upstream PaddleOCR repository
+- Pure window launcher on Windows
+- Local outputs and logs kept out of Git by default
 
-### Screenshots
+### Supported Models
 
-Main window:
+| Model | Best for | Notes |
+| --- | --- | --- |
+| `PP-OCRv5` | Plain text OCR | Fastest option |
+| `PP-StructureV3` | Textbooks, PDFs, tables, Markdown export | Recommended default |
+| `PaddleOCR-VL` | Vision-language parsing | Heavier than StructureV3 |
+| `PaddleOCR-VL-1.5` | Improved VL parsing | Higher resource usage |
+| `PaddleOCR-VL-1.6` | Strongest official VL option in this app | Best quality, slowest among defaults |
 
-![Main Window](docs/screenshots/main-window-cropped.png)
+### Interface Preview
 
-Model selection area:
+Only sanitized assets are published in this repository.
 
-![Model Selector](docs/screenshots/model-selector.png)
-
-Generated output folder:
-
-![Output Folder](docs/screenshots/output-folder-cropped.png)
+![Model Selector Preview](docs/screenshots/model-selector-safe.png)
 
 ### Quick Start
 
-1. Install Python 3.12.
-2. Create a virtual environment.
-3. Install a PaddlePaddle build that matches your GPU / CUDA runtime.
-4. Install dependencies:
+1. Install `Python 3.12`.
+2. Create and activate a virtual environment.
+3. Install a `PaddlePaddle` build that matches your GPU / CUDA environment.
+4. Install app dependencies:
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-5. Launch the app:
+5. Launch the desktop GUI:
 
 ```text
 launch_gui.bat
 ```
 
-### Output Files
+### Outputs
 
-The app writes generated results into:
+Generated files are written to:
 
 ```text
 outputs\
 ```
 
-Each run creates a timestamped subfolder.
-
-Common outputs:
+Each run creates a timestamped subfolder. Common files include:
 
 - `ocr_result.txt`
 - `ocr_result.md`
@@ -76,24 +70,16 @@ Common outputs:
 - `document.md`
 - `document_summary.json`
 
-### Repository Layout
+### Privacy
 
-- `ocr_gui.py`: main desktop application
-- `launch_gui.bat`: Windows launcher
-- `requirements.txt`: app-layer dependencies
-- `.gitignore`: excludes local-only files
-- `CHANGELOG.md`: version history
+- This desktop app is intended for local execution.
+- Files are not uploaded by this repository itself.
+- The first run of a model may download official model weights if they are not already cached locally.
 
 ### Releases and Changelog
 
-- Human-readable change history: [CHANGELOG.md](CHANGELOG.md)
-- Suggested public release flow: create tagged GitHub Releases for stable milestones such as `v0.1.0`, `v0.2.0`, etc.
-
-### Notes
-
-- The first run of a model may take longer because official weights may need to be downloaded.
-- `PaddleOCR-VL-1.6` is stronger but significantly heavier than `PP-StructureV3`.
-- Local logs are written to `logs/app.log` when available.
+- Change history: [CHANGELOG.md](CHANGELOG.md)
+- Suggested release flow: publish tagged GitHub Releases such as `v0.1.0`, `v0.2.0`, and later model/tool updates
 
 ---
 
@@ -101,35 +87,45 @@ Common outputs:
 
 ### 项目简介
 
-这是一个基于官方 PaddleOCR 管线封装的 Windows 本地桌面工具。它提供了一个轻量 GUI，方便直接处理图片和 PDF，并导出 Markdown / JSON 结果。
+这是一个基于官方 PaddleOCR 流水线封装的 Windows 本地桌面工具。它提供了一个轻量 GUI，方便直接处理图片和 PDF，并输出 Markdown / JSON 结果，适合希望本地运行、自己控文件、不依赖网页上传的使用场景。
 
-当前支持的官方模型：
+### 功能特点
 
-- `PP-OCRv5`：纯文本 OCR，速度最快
-- `PP-StructureV3`：结构化解析，推荐默认使用
-- `PaddleOCR-VL`
-- `PaddleOCR-VL-1.5`
-- `PaddleOCR-VL-1.6`
+- 本地图片 / PDF OCR 与结构化解析
+- 支持 Markdown、JSON 导出
+- 窗口内直接切换官方模型
+- 启动时检查上游 PaddleOCR 版本更新
+- 支持纯窗口模式启动
+- 输出结果、日志默认不纳入 Git 仓库
 
-### 适合什么场景
+### 当前支持的模型
 
-- 想把 PDF / 图片里的文字快速提取出来
-- 想把教材、论文、书籍页面转成 Markdown / JSON
-- 想本地离线运行，不把文件传到在线平台
-- 想在 `PP-StructureV3` 和 `PaddleOCR-VL-1.6` 之间做效果对比
+| 模型 | 适合场景 | 说明 |
+| --- | --- | --- |
+| `PP-OCRv5` | 纯文本识别 | 速度最快 |
+| `PP-StructureV3` | 课本、PDF、表格、Markdown 输出 | 默认最推荐 |
+| `PaddleOCR-VL` | 视觉语言解析 | 比 StructureV3 更重 |
+| `PaddleOCR-VL-1.5` | 更强的 VL 解析 | 占用更高 |
+| `PaddleOCR-VL-1.6` | 当前应用接入的更强官方 VL 方案 | 质量更强，但更慢 |
+
+### 界面预览
+
+仓库里只保留经过处理的安全展示图，不放包含本地路径、桌面背景或个人文件信息的截图。
+
+![模型选择区域预览](docs/screenshots/model-selector-safe.png)
 
 ### 中文快速开始
 
 1. 安装 `Python 3.12`
-2. 创建虚拟环境
-3. 按你的 GPU / CUDA 环境单独安装合适的 `PaddlePaddle`
-4. 安装本项目依赖：
+2. 创建并激活虚拟环境
+3. 按你的 GPU / CUDA 环境单独安装合适版本的 `PaddlePaddle`
+4. 安装依赖：
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-5. 双击启动：
+5. 启动程序：
 
 ```text
 launch_gui.bat
@@ -139,21 +135,19 @@ launch_gui.bat
 
 1. 选择图片或 PDF 文件
 2. 选择模型
-3. 选择语言（当前提供 `ch` / `en`）
+3. 选择语言
 4. 点击 `Run`
 5. 识别完成后打开输出目录或 Markdown 文件
 
 ### 输出目录
 
-所有生成结果都会写到：
+所有识别结果会写入：
 
 ```text
 outputs\
 ```
 
-每次运行都会自动生成一个带时间戳的子目录。
-
-常见输出文件包括：
+每次运行都会生成一个带时间戳的子目录。常见输出包括：
 
 - `ocr_result.txt`
 - `ocr_result.md`
@@ -161,15 +155,13 @@ outputs\
 - `document.md`
 - `document_summary.json`
 
-### 版本发布与更新记录
+### 隐私与联网说明
+
+- 这个桌面程序本身按本地运行方式设计。
+- 仓库代码不会主动把你的文档上传到网页服务。
+- 某个模型第一次运行时，如果本地没有权重，可能会从官方源下载模型文件。
+
+### 发布与更新
 
 - 变更记录见：[CHANGELOG.md](CHANGELOG.md)
-- 建议你后续在 GitHub 上按版本创建 Releases，例如：
-  - `v0.1.0`：初始公开版
-  - `v0.2.0`：新增模型、截图、文档完善
-
-### 说明
-
-- 某个模型第一次运行时，官方权重可能需要先下载，所以首次会更慢
-- `PaddleOCR-VL-1.6` 效果更强，但资源占用和耗时也明显更高
-- 本地日志默认写入 `logs/app.log`
+- 建议在 GitHub 上配合标签发布 Releases，方便公开给其他人使用
