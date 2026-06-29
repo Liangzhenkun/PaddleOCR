@@ -8,6 +8,20 @@ The format is inspired by Keep a Changelog, with lightweight version notes for t
 
 - Sanitized the public README visuals and removed screenshots that exposed local desktop context.
 
+## [0.3.0] - 2026-06-30
+
+### Added
+
+- Chinese / English desktop UI switching
+- Persistent application language settings
+- PyInstaller build spec for standalone EXE output
+- Inno Setup installer script for Windows packaging
+- Bundled Simplified Chinese installer language file
+
+### Changed
+
+- Installed builds now store logs, settings, and outputs under the user-local app data directory
+
 ## [0.2.0] - 2026-06-30
 
 ### Added

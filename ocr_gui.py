@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import locale
 import logging
 import os
 import queue
 import re
+import sys
 import threading
 from dataclasses import dataclass
 from datetime import datetime
@@ -24,61 +26,231 @@ import paddle
 import paddleocr
 from paddleocr import PPStructureV3, PaddleOCR, PaddleOCRVL
 
+from app_meta import APP_NAME, APP_RELEASE_VERSION, APP_SLUG
 
-APP_DIR = Path(__file__).resolve().parent
-OUTPUT_ROOT = APP_DIR / "outputs"
-LOG_ROOT = APP_DIR / "logs"
+
+SOURCE_DIR = Path(__file__).resolve().parent
 UPDATE_SOURCE_URL = (
     "https://raw.githubusercontent.com/PaddlePaddle/PaddleOCR/main/readme/README_cn.md"
 )
+SUPPORTED_UI_LANGUAGES = ("zh_CN", "en_US")
+
+
+def is_frozen() -> bool:
+    return bool(getattr(sys, "frozen", False))
+
+
+def install_dir() -> Path:
+    if is_frozen():
+        return Path(sys.executable).resolve().parent
+    return SOURCE_DIR
+
+
+def default_data_root() -> Path:
+    env_value = os.getenv("PADDLEOCR_DESKTOP_DATA_DIR")
+    if env_value:
+        return Path(env_value).expanduser()
+    if is_frozen():
+        local_appdata = os.getenv("LOCALAPPDATA")
+        if local_appdata:
+            return Path(local_appdata) / APP_SLUG
+    return SOURCE_DIR
+
+
+APP_DIR = install_dir()
+DATA_ROOT = default_data_root()
+OUTPUT_ROOT = DATA_ROOT / "outputs"
+LOG_ROOT = DATA_ROOT / "logs"
+SETTINGS_PATH = DATA_ROOT / "settings.json"
+
+
+TEXTS: dict[str, dict[str, str]] = {
+    "en_US": {
+        "window_title": f"{APP_NAME} {APP_RELEASE_VERSION}",
+        "app_title": APP_NAME,
+        "app_subtitle": (
+            "Local GPU document OCR and parsing tool with Markdown export, "
+            "official model selection, and update checks."
+        ),
+        "ui_language": "Interface",
+        "runtime": "Local runtime: app {app_version} | paddleocr {paddleocr_version} | paddle {paddle_version} | GPU: {device_name}",
+        "runtime_unknown_gpu": "CPU or unavailable",
+        "update_starting": "Update check: starting",
+        "update_contacting": "Update check: contacting upstream PaddleOCR repo",
+        "update_unreachable": "Update check: could not reach the official PaddleOCR repo",
+        "update_newer": "Update check: newer release available ({latest_version}), local is {local_version}",
+        "update_current": "Update check: local version is current ({local_version})",
+        "section_input": "1. Choose Input File",
+        "button_browse": "Browse",
+        "section_options": "2. Parsing Options",
+        "label_model": "Model",
+        "label_doc_language": "OCR Language",
+        "note_veo": "Note: Veo 3 is not an official PaddleOCR model, so it is not included. Official PaddleOCR-VL variants are included.",
+        "button_run": "Run",
+        "button_check_updates": "Check Updates",
+        "button_open_output": "Open Output Folder",
+        "button_open_markdown": "Open Markdown",
+        "button_open_log": "Open Log",
+        "status_ready": "Ready",
+        "status_completed": "Completed",
+        "status_failed": "Failed",
+        "status_running": "Running... Current model: {model_label}",
+        "output_not_generated": "Output folder: not generated",
+        "output_running": "Output folder: running",
+        "output_generated": "Output folder: {path}",
+        "files_not_generated": "Result files: not generated",
+        "files_generating": "Result files: generating",
+        "files_generated": "Result files: {files}",
+        "files_open_output": "Result files: open the output folder",
+        "section_preview": "3. Preview",
+        "dialog_choose_input": "Choose image or PDF",
+        "dialog_filetypes_primary": "Images or PDF",
+        "dialog_filetypes_all": "All files",
+        "warn_missing_file_title": "Missing file",
+        "warn_missing_file_body": "Please choose an image or PDF first.",
+        "error_missing_file_title": "File not found",
+        "error_missing_file_body": "Could not find:\n{path}",
+        "run_started": (
+            "Job started: {model_label}\n"
+            "The first run of a model may take longer because official weights may need to be downloaded.\n"
+        ),
+        "run_failed_title": "Run failed",
+        "run_failed_body": "{error}\n\nSee logs/app.log for more details.",
+        "no_preview": "[No preview text]",
+        "structured_done": "[Structured parsing completed. Results were exported to Markdown/JSON.]",
+        "ocr_lang_en": "English",
+        "ocr_lang_ch": "Chinese",
+        "ui_lang_en_US": "English",
+        "ui_lang_zh_CN": "简体中文",
+    },
+    "zh_CN": {
+        "window_title": f"PaddleOCR 本地工具 {APP_RELEASE_VERSION}",
+        "app_title": "PaddleOCR 本地工具",
+        "app_subtitle": "本地 GPU 文档 OCR 与结构化解析工具，支持 Markdown 导出、官方模型切换和更新检查。",
+        "ui_language": "界面语言",
+        "runtime": "本地运行环境：app {app_version} | paddleocr {paddleocr_version} | paddle {paddle_version} | GPU：{device_name}",
+        "runtime_unknown_gpu": "CPU 或不可用",
+        "update_starting": "更新检查：准备开始",
+        "update_contacting": "更新检查：正在连接官方 PaddleOCR 仓库",
+        "update_unreachable": "更新检查：无法连接官方 PaddleOCR 仓库",
+        "update_newer": "更新检查：发现新版本（{latest_version}），当前本地版本为 {local_version}",
+        "update_current": "更新检查：当前本地版本已是最新（{local_version}）",
+        "section_input": "1. 选择输入文件",
+        "button_browse": "浏览",
+        "section_options": "2. 识别选项",
+        "label_model": "模型",
+        "label_doc_language": "识别语言",
+        "note_veo": "说明：Veo 3 不是官方 PaddleOCR 模型，因此这里不提供。程序内置的是官方 PaddleOCR-VL 系列。",
+        "button_run": "开始识别",
+        "button_check_updates": "检查更新",
+        "button_open_output": "打开输出目录",
+        "button_open_markdown": "打开 Markdown",
+        "button_open_log": "打开日志",
+        "status_ready": "就绪",
+        "status_completed": "识别完成",
+        "status_failed": "识别失败",
+        "status_running": "正在运行，当前模型：{model_label}",
+        "output_not_generated": "输出目录：尚未生成",
+        "output_running": "输出目录：正在生成",
+        "output_generated": "输出目录：{path}",
+        "files_not_generated": "结果文件：尚未生成",
+        "files_generating": "结果文件：生成中",
+        "files_generated": "结果文件：{files}",
+        "files_open_output": "结果文件：请直接打开输出目录查看",
+        "section_preview": "3. 结果预览",
+        "dialog_choose_input": "选择图片或 PDF",
+        "dialog_filetypes_primary": "图片或 PDF",
+        "dialog_filetypes_all": "所有文件",
+        "warn_missing_file_title": "缺少文件",
+        "warn_missing_file_body": "请先选择图片或 PDF 文件。",
+        "error_missing_file_title": "文件不存在",
+        "error_missing_file_body": "找不到以下文件：\n{path}",
+        "run_started": "任务已开始：{model_label}\n首次运行某个模型时，官方权重可能需要先下载，因此第一次会更慢。\n",
+        "run_failed_title": "运行失败",
+        "run_failed_body": "{error}\n\n更多细节请查看 logs/app.log。",
+        "no_preview": "[没有可显示的预览文本]",
+        "structured_done": "[结构化解析已完成，结果已导出为 Markdown / JSON。]",
+        "ocr_lang_en": "英语",
+        "ocr_lang_ch": "中文",
+        "ui_lang_en_US": "English",
+        "ui_lang_zh_CN": "简体中文",
+    },
+}
+
+
+MODEL_TEXTS: dict[str, dict[str, dict[str, str]]] = {
+    "ppocrv5": {
+        "en_US": {
+            "label": "PP-OCRv5 | Plain OCR | Fastest",
+            "note": "Best for extracting plain text quickly.",
+        },
+        "zh_CN": {
+            "label": "PP-OCRv5 | 纯文本识别 | 最快",
+            "note": "适合快速提取连续纯文本内容。",
+        },
+    },
+    "ppstructurev3": {
+        "en_US": {
+            "label": "PP-StructureV3 | Structured Parsing | Recommended",
+            "note": "Best balance for PDFs, textbooks, tables, and Markdown export.",
+        },
+        "zh_CN": {
+            "label": "PP-StructureV3 | 结构化解析 | 推荐",
+            "note": "在 PDF、教材、表格和 Markdown 导出之间平衡最好。",
+        },
+    },
+    "vl16": {
+        "en_US": {
+            "label": "PaddleOCR-VL-1.6 | Flagship Document Model | Heavy",
+            "note": "Latest flagship document parser. Larger first download and higher GPU usage.",
+        },
+        "zh_CN": {
+            "label": "PaddleOCR-VL-1.6 | 旗舰文档模型 | 较重",
+            "note": "当前更强的官方文档解析模型，首次下载更大，GPU 占用也更高。",
+        },
+    },
+    "vl15": {
+        "en_US": {
+            "label": "PaddleOCR-VL-1.5 | Previous VL Release",
+            "note": "Useful for comparing with VL-1.6.",
+        },
+        "zh_CN": {
+            "label": "PaddleOCR-VL-1.5 | 上一代 VL 版本",
+            "note": "适合和 VL-1.6 做速度与质量对比。",
+        },
+    },
+    "vl1": {
+        "en_US": {
+            "label": "PaddleOCR-VL | First VL Release",
+            "note": "Original VL pipeline kept by the official project.",
+        },
+        "zh_CN": {
+            "label": "PaddleOCR-VL | 初代 VL 版本",
+            "note": "官方保留的第一代视觉语言解析管线。",
+        },
+    },
+}
 
 
 @dataclass(frozen=True)
 class ModelOption:
     key: str
-    label: str
     family: str
     pipeline_version: str | None = None
-    note: str = ""
 
 
 MODEL_OPTIONS: dict[str, ModelOption] = {
-    "ppocrv5": ModelOption(
-        key="ppocrv5",
-        label="PP-OCRv5 | Plain OCR | Fastest",
-        family="ocr",
-        note="Best for extracting plain text quickly.",
-    ),
-    "ppstructurev3": ModelOption(
-        key="ppstructurev3",
-        label="PP-StructureV3 | Structured Parsing | Recommended",
-        family="structure",
-        note="Best balance for PDFs, textbooks, tables, and Markdown export.",
-    ),
-    "vl16": ModelOption(
-        key="vl16",
-        label="PaddleOCR-VL-1.6 | Flagship Document Model | Heavy",
-        family="vl",
-        pipeline_version="v1.6",
-        note="Latest flagship document parser. Larger first download and higher GPU usage.",
-    ),
-    "vl15": ModelOption(
-        key="vl15",
-        label="PaddleOCR-VL-1.5 | Previous VL Release",
-        family="vl",
-        pipeline_version="v1.5",
-        note="Useful for comparing with VL-1.6.",
-    ),
-    "vl1": ModelOption(
-        key="vl1",
-        label="PaddleOCR-VL | First VL Release",
-        family="vl",
-        pipeline_version="v1",
-        note="Original VL pipeline kept by the official project.",
-    ),
+    "ppocrv5": ModelOption(key="ppocrv5", family="ocr"),
+    "ppstructurev3": ModelOption(key="ppstructurev3", family="structure"),
+    "vl16": ModelOption(key="vl16", family="vl", pipeline_version="v1.6"),
+    "vl15": ModelOption(key="vl15", family="vl", pipeline_version="v1.5"),
+    "vl1": ModelOption(key="vl1", family="vl", pipeline_version="v1"),
 }
 
-MODEL_LABEL_TO_KEY = {option.label: option.key for option in MODEL_OPTIONS.values()}
+
+def ensure_data_root() -> Path:
+    DATA_ROOT.mkdir(parents=True, exist_ok=True)
+    return DATA_ROOT
 
 
 def ensure_output_root() -> Path:
@@ -126,10 +298,67 @@ def fetch_latest_version_from_official_repo(timeout: int = 12) -> str | None:
         logging.exception("Failed to check upstream PaddleOCR version")
         return None
 
-    match = re.search(r"PaddleOCR\s+(\d+\.\d+\.\d+)\s+发布", response.text)
-    if not match:
-        match = re.search(r"PaddleOCR\s+(\d+\.\d+\.\d+)\s+Released", response.text)
-    return match.group(1) if match else None
+    patterns = (
+        r"^\s*PaddleOCR\s+(\d+\.\d+\.\d+)\s+发布",
+        r"^\s*PaddleOCR\s+(\d+\.\d+\.\d+)\s+Released",
+        r"^\s*PaddleOCR\s+(\d+\.\d+\.\d+)\b",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, response.text, flags=re.MULTILINE)
+        if match:
+            return match.group(1)
+    return None
+
+
+def normalize_ui_language(value: str | None) -> str:
+    if value in SUPPORTED_UI_LANGUAGES:
+        return value  # type: ignore[return-value]
+    if value and value.lower().startswith("zh"):
+        return "zh_CN"
+    return "en_US"
+
+
+def detect_system_ui_language() -> str:
+    candidates = [
+        locale.getlocale()[0],
+        os.getenv("LANG"),
+        os.getenv("LC_ALL"),
+        os.getenv("LC_MESSAGES"),
+    ]
+    for candidate in candidates:
+        normalized = normalize_ui_language(candidate)
+        if candidate:
+            return normalized
+    return "en_US"
+
+
+def load_settings() -> dict[str, Any]:
+    try:
+        if SETTINGS_PATH.exists():
+            return json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        logging.exception("Failed to load settings")
+    return {}
+
+
+def save_settings(data: dict[str, Any]) -> None:
+    try:
+        ensure_data_root()
+        SETTINGS_PATH.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except Exception:
+        logging.exception("Failed to save settings")
+
+
+def get_device_name() -> str:
+    try:
+        if paddle.is_compiled_with_cuda() and paddle.device.cuda.device_count() > 0:
+            return paddle.device.cuda.get_device_name(0)
+    except Exception:
+        logging.exception("Failed to read CUDA device name")
+    return "CPU or unavailable"
 
 
 @dataclass
@@ -197,22 +426,23 @@ class OCRBackend:
             )
         return self._vl_pipelines[pipeline_version]
 
-    def run_job(self, config: JobConfig) -> JobResult:
+    def run_job(self, config: JobConfig, ui_language: str) -> JobResult:
         option = MODEL_OPTIONS[config.model_key]
         output_dir = ensure_output_root() / f"{config.input_path.stem}_{timestamp()}"
         output_dir.mkdir(parents=True, exist_ok=True)
         logging.info(
-            "Starting job model=%s lang=%s input=%s",
+            "Starting job model=%s lang=%s input=%s ui_language=%s",
             option.key,
             config.lang,
             config.input_path,
+            ui_language,
         )
 
         if option.family == "ocr":
             return self._run_text_ocr(config, output_dir)
         if option.family == "structure":
-            return self._run_structure(config, output_dir)
-        return self._run_vl(config, output_dir, option)
+            return self._run_structure(config, output_dir, ui_language)
+        return self._run_vl(config, output_dir, option, ui_language)
 
     def _run_text_ocr(self, config: JobConfig, output_dir: Path) -> JobResult:
         pipeline = self.get_ocr_pipeline(config.lang)
@@ -269,7 +499,12 @@ class OCRBackend:
             json_file=json_path,
         )
 
-    def _run_structure(self, config: JobConfig, output_dir: Path) -> JobResult:
+    def _run_structure(
+        self,
+        config: JobConfig,
+        output_dir: Path,
+        ui_language: str,
+    ) -> JobResult:
         pipeline = self.get_structure_pipeline(config.lang)
         results = list(pipeline.predict(config.input_path.as_posix()))
         return self._save_markdown_pipeline_results(
@@ -280,10 +515,15 @@ class OCRBackend:
             summary_name="document_summary.json",
             model_name="PP-StructureV3",
             input_path=config.input_path,
+            ui_language=ui_language,
         )
 
     def _run_vl(
-        self, config: JobConfig, output_dir: Path, option: ModelOption
+        self,
+        config: JobConfig,
+        output_dir: Path,
+        option: ModelOption,
+        ui_language: str,
     ) -> JobResult:
         pipeline = self.get_vl_pipeline(option.pipeline_version or "v1.6")
         results = list(pipeline.predict(config.input_path.as_posix()))
@@ -295,6 +535,7 @@ class OCRBackend:
             summary_name="document_summary.json",
             model_name=f"PaddleOCR-VL-{option.pipeline_version}",
             input_path=config.input_path,
+            ui_language=ui_language,
         )
 
     def _save_markdown_pipeline_results(
@@ -307,6 +548,7 @@ class OCRBackend:
         summary_name: str,
         model_name: str,
         input_path: Path,
+        ui_language: str,
     ) -> JobResult:
         markdown_pages = []
 
@@ -342,7 +584,7 @@ class OCRBackend:
         )
 
         if not preview:
-            preview = "[Structured parsing completed. Results were exported to Markdown/JSON.]"
+            preview = self._translate(ui_language, "structured_done")
 
         return JobResult(
             output_dir=output_dir,
@@ -368,6 +610,11 @@ class OCRBackend:
             doc.close()
         return page_paths
 
+    def _translate(self, ui_language: str, key: str, **kwargs: Any) -> str:
+        bundle = TEXTS.get(ui_language, TEXTS["en_US"])
+        template = bundle.get(key, TEXTS["en_US"].get(key, key))
+        return template.format(**kwargs)
+
 
 class OCRApp:
     def __init__(self, root: tk.Tk) -> None:
@@ -378,111 +625,158 @@ class OCRApp:
         self.current_markdown_file: Path | None = None
         self.current_json_file: Path | None = None
         self.current_text_file: Path | None = None
-
-        self.root.title("PaddleOCR Desktop Tool")
-        self.root.geometry("1060x800")
-        self.root.minsize(920, 680)
-        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.current_state = "ready"
+        self.settings = load_settings()
+        self.ui_language_code = normalize_ui_language(
+            self.settings.get("ui_language") or detect_system_ui_language()
+        )
+        self.device_name = get_device_name()
+        self.model_label_to_key: dict[str, str] = {}
+        self.ocr_lang_label_to_key: dict[str, str] = {}
+        self.ui_lang_label_to_code: dict[str, str] = {}
 
         self.file_var = tk.StringVar()
         self.model_key_var = tk.StringVar(value="ppstructurev3")
-        self.model_label_var = tk.StringVar(value=MODEL_OPTIONS["ppstructurev3"].label)
+        self.model_label_var = tk.StringVar()
         self.lang_var = tk.StringVar(value="en")
-        self.status_var = tk.StringVar(value="Ready")
-        self.output_var = tk.StringVar(value="Output folder: not generated")
-        self.file_hint_var = tk.StringVar(value="Result files: not generated")
-        self.model_note_var = tk.StringVar(value=MODEL_OPTIONS["ppstructurev3"].note)
-        self.update_var = tk.StringVar(value="Update check: starting")
-        self.runtime_var = tk.StringVar(
-            value=(
-                f"Local runtime: paddleocr {installed_paddleocr_version()} | "
-                f"paddle {paddle.__version__} | GPU: {paddle.device.cuda.get_device_name(0)}"
-            )
-        )
+        self.lang_label_var = tk.StringVar()
+        self.ui_language_var = tk.StringVar()
+        self.status_var = tk.StringVar()
+        self.output_var = tk.StringVar()
+        self.file_hint_var = tk.StringVar()
+        self.model_note_var = tk.StringVar()
+        self.update_var = tk.StringVar()
+        self.runtime_var = tk.StringVar()
+
+        self.root.geometry("1120x820")
+        self.root.minsize(960, 700)
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self._build_ui()
+        self._apply_language(refresh_comboboxes=True)
         self.root.after(150, self._poll_events)
         self._start_update_check()
+
+    def _t(self, key: str, **kwargs: Any) -> str:
+        bundle = TEXTS.get(self.ui_language_code, TEXTS["en_US"])
+        template = bundle.get(key, TEXTS["en_US"].get(key, key))
+        return template.format(**kwargs)
+
+    def _model_label(self, key: str) -> str:
+        return MODEL_TEXTS[key][self.ui_language_code]["label"]
+
+    def _model_note(self, key: str) -> str:
+        return MODEL_TEXTS[key][self.ui_language_code]["note"]
+
+    def _ocr_language_label(self, key: str) -> str:
+        return self._t(f"ocr_lang_{key}")
+
+    def _ui_language_label(self, key: str) -> str:
+        return self._t(f"ui_lang_{key}")
+
+    def _current_model_label(self) -> str:
+        return self._model_label(self.model_key_var.get().strip() or "ppstructurev3")
+
+    def _refresh_runtime_text(self) -> None:
+        device_name = self.device_name
+        if device_name == "CPU or unavailable":
+            device_name = self._t("runtime_unknown_gpu")
+        self.runtime_var.set(
+            self._t(
+                "runtime",
+                app_version=APP_RELEASE_VERSION,
+                paddleocr_version=installed_paddleocr_version(),
+                paddle_version=paddle.__version__,
+                device_name=device_name,
+            )
+        )
 
     def _build_ui(self) -> None:
         main = ttk.Frame(self.root, padding=16)
         main.pack(fill=tk.BOTH, expand=True)
 
-        ttk.Label(
-            main,
-            text="PaddleOCR Desktop Tool",
-            font=("Segoe UI", 16, "bold"),
-        ).pack(anchor=tk.W)
+        top = ttk.Frame(main)
+        top.pack(fill=tk.X)
 
-        ttk.Label(
-            main,
-            text=(
-                "Local GPU document OCR and parsing tool with Markdown export, "
-                "official model selection, and update checks."
-            ),
-        ).pack(anchor=tk.W, pady=(4, 6))
+        title_block = ttk.Frame(top)
+        title_block.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-        ttk.Label(main, textvariable=self.runtime_var).pack(anchor=tk.W)
+        self.title_label = ttk.Label(title_block, font=("Segoe UI", 16, "bold"))
+        self.title_label.pack(anchor=tk.W)
+
+        self.subtitle_label = ttk.Label(title_block)
+        self.subtitle_label.pack(anchor=tk.W, pady=(4, 6))
+
+        language_block = ttk.Frame(top)
+        language_block.pack(side=tk.RIGHT, anchor=tk.NE)
+
+        self.ui_language_title_label = ttk.Label(language_block)
+        self.ui_language_title_label.pack(anchor=tk.E)
+
+        self.ui_language_box = ttk.Combobox(
+            language_block,
+            textvariable=self.ui_language_var,
+            state="readonly",
+            width=16,
+        )
+        self.ui_language_box.pack(anchor=tk.E, pady=(4, 0))
+        self.ui_language_box.bind("<<ComboboxSelected>>", self._on_ui_language_selected)
+
+        ttk.Label(main, textvariable=self.runtime_var).pack(anchor=tk.W, pady=(6, 0))
         ttk.Label(main, textvariable=self.update_var).pack(anchor=tk.W, pady=(2, 14))
 
-        file_frame = ttk.LabelFrame(main, text="1. Choose Input File", padding=12)
-        file_frame.pack(fill=tk.X)
+        self.file_frame = ttk.LabelFrame(main, padding=12)
+        self.file_frame.pack(fill=tk.X)
 
-        ttk.Entry(file_frame, textvariable=self.file_var).pack(
-            side=tk.LEFT, fill=tk.X, expand=True
-        )
-        ttk.Button(file_frame, text="Browse", command=self.pick_file).pack(
-            side=tk.LEFT, padx=(10, 0)
-        )
+        self.file_entry = ttk.Entry(self.file_frame, textvariable=self.file_var)
+        self.file_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.browse_btn = ttk.Button(self.file_frame, command=self.pick_file)
+        self.browse_btn.pack(side=tk.LEFT, padx=(10, 0))
 
-        options = ttk.LabelFrame(main, text="2. Parsing Options", padding=12)
-        options.pack(fill=tk.X, pady=(12, 0))
+        self.options_frame = ttk.LabelFrame(main, padding=12)
+        self.options_frame.pack(fill=tk.X, pady=(12, 0))
 
-        ttk.Label(options, text="Model").grid(row=0, column=0, sticky="w")
-        model_box = ttk.Combobox(
-            options,
+        self.model_label = ttk.Label(self.options_frame)
+        self.model_label.grid(row=0, column=0, sticky="w")
+
+        self.model_box = ttk.Combobox(
+            self.options_frame,
             textvariable=self.model_label_var,
-            values=list(MODEL_LABEL_TO_KEY.keys()),
             state="readonly",
             width=46,
         )
-        model_box.grid(row=0, column=1, sticky="w", padx=(8, 20))
-        model_box.bind("<<ComboboxSelected>>", self._sync_model_key)
+        self.model_box.grid(row=0, column=1, sticky="w", padx=(8, 20))
+        self.model_box.bind("<<ComboboxSelected>>", self._sync_model_key)
 
-        ttk.Label(options, text="Language").grid(row=0, column=2, sticky="w")
-        ttk.Combobox(
-            options,
-            textvariable=self.lang_var,
-            values=["ch", "en"],
+        self.doc_language_label = ttk.Label(self.options_frame)
+        self.doc_language_label.grid(row=0, column=2, sticky="w")
+
+        self.doc_language_box = ttk.Combobox(
+            self.options_frame,
+            textvariable=self.lang_label_var,
             state="readonly",
-            width=10,
-        ).grid(row=0, column=3, sticky="w", padx=(8, 0))
-
-        ttk.Label(options, textvariable=self.model_note_var).grid(
-            row=1, column=0, columnspan=4, sticky="w", pady=(10, 0)
+            width=12,
         )
-        ttk.Label(
-            options,
-            text=(
-                "Note: Veo 3 is not an official PaddleOCR model, so it is not included. "
-                "Official PaddleOCR-VL variants are included."
-            ),
-        ).grid(row=2, column=0, columnspan=4, sticky="w", pady=(6, 0))
+        self.doc_language_box.grid(row=0, column=3, sticky="w", padx=(8, 0))
+        self.doc_language_box.bind("<<ComboboxSelected>>", self._sync_doc_language)
+
+        self.model_note_label = ttk.Label(self.options_frame, textvariable=self.model_note_var)
+        self.model_note_label.grid(row=1, column=0, columnspan=4, sticky="w", pady=(10, 0))
+
+        self.veo_note_label = ttk.Label(self.options_frame)
+        self.veo_note_label.grid(row=2, column=0, columnspan=4, sticky="w", pady=(6, 0))
 
         actions = ttk.Frame(main)
         actions.pack(fill=tk.X, pady=(12, 0))
 
-        self.start_btn = ttk.Button(actions, text="Run", command=self.start_job)
+        self.start_btn = ttk.Button(actions, command=self.start_job)
         self.start_btn.pack(side=tk.LEFT)
 
-        self.check_update_btn = ttk.Button(
-            actions, text="Check Updates", command=self._start_update_check
-        )
+        self.check_update_btn = ttk.Button(actions, command=self._start_update_check)
         self.check_update_btn.pack(side=tk.LEFT, padx=(10, 0))
 
         self.open_btn = ttk.Button(
             actions,
-            text="Open Output Folder",
             command=self.open_output_dir,
             state=tk.DISABLED,
         )
@@ -490,17 +784,12 @@ class OCRApp:
 
         self.open_md_btn = ttk.Button(
             actions,
-            text="Open Markdown",
             command=self.open_markdown,
             state=tk.DISABLED,
         )
         self.open_md_btn.pack(side=tk.LEFT, padx=(10, 0))
 
-        self.open_log_btn = ttk.Button(
-            actions,
-            text="Open Log",
-            command=self.open_log,
-        )
+        self.open_log_btn = ttk.Button(actions, command=self.open_log)
         self.open_log_btn.pack(side=tk.LEFT, padx=(10, 0))
 
         self.progress = ttk.Progressbar(actions, mode="indeterminate", length=220)
@@ -512,24 +801,175 @@ class OCRApp:
         ttk.Label(status_frame, textvariable=self.output_var).pack(anchor=tk.W, pady=(4, 0))
         ttk.Label(status_frame, textvariable=self.file_hint_var).pack(anchor=tk.W, pady=(4, 0))
 
-        result_frame = ttk.LabelFrame(main, text="3. Preview", padding=12)
-        result_frame.pack(fill=tk.BOTH, expand=True, pady=(12, 0))
+        self.result_frame = ttk.LabelFrame(main, padding=12)
+        self.result_frame.pack(fill=tk.BOTH, expand=True, pady=(12, 0))
 
         self.result_box = scrolledtext.ScrolledText(
-            result_frame,
+            self.result_frame,
             wrap=tk.WORD,
             font=("Consolas", 11),
         )
         self.result_box.pack(fill=tk.BOTH, expand=True)
 
+    def _apply_language(self, refresh_comboboxes: bool) -> None:
+        self.root.title(self._t("window_title"))
+        self.title_label.config(text=self._t("app_title"))
+        self.subtitle_label.config(text=self._t("app_subtitle"))
+        self.ui_language_title_label.config(text=self._t("ui_language"))
+        self.file_frame.config(text=self._t("section_input"))
+        self.browse_btn.config(text=self._t("button_browse"))
+        self.options_frame.config(text=self._t("section_options"))
+        self.model_label.config(text=self._t("label_model"))
+        self.doc_language_label.config(text=self._t("label_doc_language"))
+        self.veo_note_label.config(text=self._t("note_veo"))
+        self.start_btn.config(text=self._t("button_run"))
+        self.check_update_btn.config(text=self._t("button_check_updates"))
+        self.open_btn.config(text=self._t("button_open_output"))
+        self.open_md_btn.config(text=self._t("button_open_markdown"))
+        self.open_log_btn.config(text=self._t("button_open_log"))
+        self.result_frame.config(text=self._t("section_preview"))
+
+        if refresh_comboboxes:
+            self._refresh_ui_language_combobox()
+            self._refresh_model_combobox()
+            self._refresh_doc_language_combobox()
+
+        self.model_note_var.set(self._model_note(self.model_key_var.get()))
+        self._refresh_runtime_text()
+        self._refresh_static_status_text()
+
+    def _refresh_static_status_text(self) -> None:
+        if self.current_state == "running":
+            self.status_var.set(
+                self._t("status_running", model_label=self._current_model_label())
+            )
+            self.output_var.set(self._t("output_running"))
+            self.file_hint_var.set(self._t("files_generating"))
+            return
+
+        if self.current_state == "completed":
+            self.status_var.set(self._t("status_completed"))
+            if self.current_output_dir:
+                self.output_var.set(
+                    self._t("output_generated", path=self.current_output_dir)
+                )
+            else:
+                self.output_var.set(self._t("output_not_generated"))
+
+            files = []
+            if self.current_text_file:
+                files.append(self.current_text_file.name)
+            if self.current_markdown_file:
+                files.append(self.current_markdown_file.name)
+            if self.current_json_file:
+                files.append(self.current_json_file.name)
+            if files:
+                self.file_hint_var.set(self._t("files_generated", files=", ".join(files)))
+            else:
+                self.file_hint_var.set(self._t("files_open_output"))
+            return
+
+        if self.current_state == "failed":
+            self.status_var.set(self._t("status_failed"))
+            self.output_var.set(self._t("output_not_generated"))
+            self.file_hint_var.set(self._t("files_not_generated"))
+            return
+
+        if not self.status_var.get():
+            self.status_var.set(self._t("status_ready"))
+        elif self.status_var.get() in {
+            TEXTS["en_US"]["status_ready"],
+            TEXTS["zh_CN"]["status_ready"],
+        }:
+            self.status_var.set(self._t("status_ready"))
+        elif self.status_var.get() in {
+            TEXTS["en_US"]["status_completed"],
+            TEXTS["zh_CN"]["status_completed"],
+        }:
+            self.status_var.set(self._t("status_completed"))
+        elif self.status_var.get() in {
+            TEXTS["en_US"]["status_failed"],
+            TEXTS["zh_CN"]["status_failed"],
+        }:
+            self.status_var.set(self._t("status_failed"))
+
+        if not self.output_var.get() or self.output_var.get() in {
+            TEXTS["en_US"]["output_not_generated"],
+            TEXTS["zh_CN"]["output_not_generated"],
+        }:
+            self.output_var.set(self._t("output_not_generated"))
+
+        if not self.file_hint_var.get() or self.file_hint_var.get() in {
+            TEXTS["en_US"]["files_not_generated"],
+            TEXTS["zh_CN"]["files_not_generated"],
+        }:
+            self.file_hint_var.set(self._t("files_not_generated"))
+
+        if self.update_var.get() in {
+            "",
+            TEXTS["en_US"]["update_starting"],
+            TEXTS["zh_CN"]["update_starting"],
+        }:
+            self.update_var.set(self._t("update_starting"))
+
+    def _refresh_ui_language_combobox(self) -> None:
+        values: list[str] = []
+        self.ui_lang_label_to_code.clear()
+        for code in SUPPORTED_UI_LANGUAGES:
+            label = self._ui_language_label(code)
+            values.append(label)
+            self.ui_lang_label_to_code[label] = code
+        self.ui_language_box.config(values=values)
+        self.ui_language_var.set(self._ui_language_label(self.ui_language_code))
+
+    def _refresh_model_combobox(self) -> None:
+        selected_key = self.model_key_var.get().strip() or "ppstructurev3"
+        values: list[str] = []
+        self.model_label_to_key.clear()
+        for key in MODEL_OPTIONS:
+            label = self._model_label(key)
+            values.append(label)
+            self.model_label_to_key[label] = key
+        self.model_box.config(values=values)
+        self.model_label_var.set(self._model_label(selected_key))
+        self.model_note_var.set(self._model_note(selected_key))
+
+    def _refresh_doc_language_combobox(self) -> None:
+        current_lang = self.lang_var.get().strip() or "en"
+        values: list[str] = []
+        self.ocr_lang_label_to_key.clear()
+        for key in ("en", "ch"):
+            label = self._ocr_language_label(key)
+            values.append(label)
+            self.ocr_lang_label_to_key[label] = key
+        self.doc_language_box.config(values=values)
+        self.lang_label_var.set(self._ocr_language_label(current_lang))
+
+    def _on_ui_language_selected(self, event: tk.Event[Any] | None = None) -> None:
+        label = event.widget.get() if event else self.ui_language_var.get()
+        code = self.ui_lang_label_to_code.get(label, "en_US")
+        if code == self.ui_language_code:
+            return
+        self.ui_language_code = code
+        self.settings["ui_language"] = code
+        save_settings(self.settings)
+        self._apply_language(refresh_comboboxes=True)
+
     def _sync_model_key(self, event: tk.Event[Any] | None = None) -> None:
         label = event.widget.get() if event else self.model_label_var.get()
-        key = MODEL_LABEL_TO_KEY.get(label, "ppstructurev3")
+        key = self.model_label_to_key.get(label, "ppstructurev3")
         self.model_key_var.set(key)
-        self.model_note_var.set(MODEL_OPTIONS[key].note)
+        self.model_label_var.set(self._model_label(key))
+        self.model_note_var.set(self._model_note(key))
+
+    def _sync_doc_language(self, event: tk.Event[Any] | None = None) -> None:
+        label = event.widget.get() if event else self.lang_label_var.get()
+        key = self.ocr_lang_label_to_key.get(label, "en")
+        self.lang_var.set(key)
+        self.lang_label_var.set(self._ocr_language_label(key))
 
     def _start_update_check(self) -> None:
-        self.update_var.set("Update check: contacting upstream PaddleOCR repo")
+        self.update_var.set(self._t("update_contacting"))
         threading.Thread(target=self._check_updates_worker, daemon=True).start()
 
     def _check_updates_worker(self) -> None:
@@ -539,10 +979,10 @@ class OCRApp:
 
     def pick_file(self) -> None:
         path = filedialog.askopenfilename(
-            title="Choose image or PDF",
+            title=self._t("dialog_choose_input"),
             filetypes=[
-                ("Images or PDF", "*.png;*.jpg;*.jpeg;*.bmp;*.webp;*.pdf"),
-                ("All files", "*.*"),
+                (self._t("dialog_filetypes_primary"), "*.png;*.jpg;*.jpeg;*.bmp;*.webp;*.pdf"),
+                (self._t("dialog_filetypes_all"), "*.*"),
             ],
         )
         if path:
@@ -562,12 +1002,18 @@ class OCRApp:
     def start_job(self) -> None:
         input_path_text = self.file_var.get().strip()
         if not input_path_text:
-            messagebox.showwarning("Missing file", "Please choose an image or PDF first.")
+            messagebox.showwarning(
+                self._t("warn_missing_file_title"),
+                self._t("warn_missing_file_body"),
+            )
             return
 
         input_path = Path(input_path_text)
         if not input_path.exists():
-            messagebox.showerror("File not found", f"Could not find:\n{input_path}")
+            messagebox.showerror(
+                self._t("error_missing_file_title"),
+                self._t("error_missing_file_body", path=input_path),
+            )
             return
 
         config = JobConfig(
@@ -575,33 +1021,32 @@ class OCRApp:
             model_key=self.model_key_var.get().strip(),
             lang=self.lang_var.get().strip(),
         )
-        option = MODEL_OPTIONS[config.model_key]
+        model_label = self._current_model_label()
 
         self.current_output_dir = None
         self.current_markdown_file = None
         self.current_json_file = None
         self.current_text_file = None
-        self.output_var.set("Output folder: running")
-        self.file_hint_var.set("Result files: generating")
-        self.status_var.set(f"Running... Current model: {option.label}")
+        self.current_state = "running"
+        self.output_var.set(self._t("output_running"))
+        self.file_hint_var.set(self._t("files_generating"))
+        self.status_var.set(self._t("status_running", model_label=model_label))
         self.result_box.delete("1.0", tk.END)
-        self.result_box.insert(
-            tk.END,
-            (
-                f"Job started: {option.label}\n"
-                "The first run of a model may take longer because official weights may need to be downloaded.\n"
-            ),
-        )
+        self.result_box.insert(tk.END, self._t("run_started", model_label=model_label))
         self.start_btn.config(state=tk.DISABLED)
         self.open_btn.config(state=tk.DISABLED)
         self.open_md_btn.config(state=tk.DISABLED)
         self.progress.start(12)
 
-        threading.Thread(target=self._run_worker, args=(config,), daemon=True).start()
+        threading.Thread(
+            target=self._run_worker,
+            args=(config, self.ui_language_code),
+            daemon=True,
+        ).start()
 
-    def _run_worker(self, config: JobConfig) -> None:
+    def _run_worker(self, config: JobConfig, ui_language: str) -> None:
         try:
-            result = self.backend.run_job(config)
+            result = self.backend.run_job(config, ui_language)
             self.events.put(("success", result))
         except Exception as exc:
             logging.exception("Run failed")
@@ -620,9 +1065,10 @@ class OCRApp:
                 self.current_markdown_file = result.markdown_file
                 self.current_json_file = result.json_file
                 self.current_text_file = result.primary_text_file
+                self.current_state = "completed"
 
-                self.status_var.set("Completed")
-                self.output_var.set(f"Output folder: {result.output_dir}")
+                self.status_var.set(self._t("status_completed"))
+                self.output_var.set(self._t("output_generated", path=result.output_dir))
 
                 files = []
                 if result.primary_text_file:
@@ -631,12 +1077,13 @@ class OCRApp:
                     files.append(result.markdown_file.name)
                 if result.json_file:
                     files.append(result.json_file.name)
-                self.file_hint_var.set(
-                    "Result files: " + (", ".join(files) if files else "open the output folder")
-                )
+                if files:
+                    self.file_hint_var.set(self._t("files_generated", files=", ".join(files)))
+                else:
+                    self.file_hint_var.set(self._t("files_open_output"))
 
                 self.result_box.delete("1.0", tk.END)
-                self.result_box.insert(tk.END, result.preview or "[No preview text]")
+                self.result_box.insert(tk.END, result.preview or self._t("no_preview"))
                 self.open_btn.config(state=tk.NORMAL)
                 if result.markdown_file:
                     self.open_md_btn.config(state=tk.NORMAL)
@@ -645,27 +1092,32 @@ class OCRApp:
                 self.start_btn.config(state=tk.NORMAL)
 
             elif event_type == "error":
-                self.status_var.set("Failed")
-                self.output_var.set("Output folder: not generated")
-                self.file_hint_var.set("Result files: not generated")
+                self.current_state = "failed"
+                self.status_var.set(self._t("status_failed"))
+                self.output_var.set(self._t("output_not_generated"))
+                self.file_hint_var.set(self._t("files_not_generated"))
                 self.progress.stop()
                 self.start_btn.config(state=tk.NORMAL)
                 messagebox.showerror(
-                    "Run failed",
-                    payload + "\n\nSee logs/app.log for more details.",
+                    self._t("run_failed_title"),
+                    self._t("run_failed_body", error=payload),
                 )
 
             elif event_type == "update_info":
                 local_version, latest_version = payload
                 if not latest_version:
-                    self.update_var.set("Update check: could not reach the official PaddleOCR repo")
+                    self.update_var.set(self._t("update_unreachable"))
                 elif Version(latest_version) > Version(local_version):
                     self.update_var.set(
-                        f"Update check: newer release available ({latest_version}), local is {local_version}"
+                        self._t(
+                            "update_newer",
+                            latest_version=latest_version,
+                            local_version=local_version,
+                        )
                     )
                 else:
                     self.update_var.set(
-                        f"Update check: local version is current ({local_version})"
+                        self._t("update_current", local_version=local_version)
                     )
 
         self.root.after(150, self._poll_events)
@@ -678,6 +1130,7 @@ class OCRApp:
 
 
 def main() -> None:
+    ensure_data_root()
     configure_logging()
     ensure_output_root()
     root = tk.Tk()

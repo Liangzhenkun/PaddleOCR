@@ -17,9 +17,11 @@ This project packages official PaddleOCR workflows into a lightweight Tkinter de
 - Local OCR and structured parsing for images and PDFs
 - Markdown and JSON export
 - Official model selector inside the GUI
+- Bilingual desktop UI with Chinese / English switching
 - Startup version check against the upstream PaddleOCR repository
 - Pure window launcher on Windows
 - Local outputs and logs kept out of Git by default
+- Windows installer packaging via `PyInstaller` + `Inno Setup`
 
 ### Supported Models
 
@@ -62,6 +64,12 @@ Generated files are written to:
 outputs\
 ```
 
+When running the installed EXE build, logs, settings, and generated outputs are stored under:
+
+```text
+%LOCALAPPDATA%\PaddleOCRDesktopTool\
+```
+
 Each run creates a timestamped subfolder. Common files include:
 
 - `ocr_result.txt`
@@ -81,6 +89,22 @@ Each run creates a timestamped subfolder. Common files include:
 - Change history: [CHANGELOG.md](CHANGELOG.md)
 - Suggested release flow: publish tagged GitHub Releases such as `v0.1.0`, `v0.2.0`, and later model/tool updates
 
+### Build an Installer
+
+1. Create and activate `.venv`
+2. Install a matching `PaddlePaddle` build
+3. Run:
+
+```powershell
+.\scripts\build_exe.ps1 -Clean
+.\scripts\build_installer.ps1
+```
+
+Build outputs:
+
+- EXE folder: `dist\PaddleOCRDesktopTool\`
+- Installer: `installer\Output\PaddleOCRDesktopTool-Setup-0.3.0.exe`
+
 ---
 
 ## 中文
@@ -94,9 +118,11 @@ Each run creates a timestamped subfolder. Common files include:
 - 本地图片 / PDF OCR 与结构化解析
 - 支持 Markdown、JSON 导出
 - 窗口内直接切换官方模型
+- 支持中文 / English 双语界面切换
 - 启动时检查上游 PaddleOCR 版本更新
 - 支持纯窗口模式启动
 - 输出结果、日志默认不纳入 Git 仓库
+- 支持通过 `PyInstaller` + `Inno Setup` 生成 Windows 安装包
 
 ### 当前支持的模型
 
@@ -141,10 +167,16 @@ launch_gui.bat
 
 ### 输出目录
 
-所有识别结果会写入：
+源码直接运行时，识别结果默认写入：
 
 ```text
 outputs\
+```
+
+安装版 EXE 运行时，日志、设置和识别输出会写入：
+
+```text
+%LOCALAPPDATA%\PaddleOCRDesktopTool\
 ```
 
 每次运行都会生成一个带时间戳的子目录。常见输出包括：
@@ -165,3 +197,19 @@ outputs\
 
 - 变更记录见：[CHANGELOG.md](CHANGELOG.md)
 - 建议在 GitHub 上配合标签发布 Releases，方便公开给其他人使用
+
+### 打包安装包
+
+1. 创建并激活 `.venv`
+2. 安装与你环境匹配的 `PaddlePaddle`
+3. 运行：
+
+```powershell
+.\scripts\build_exe.ps1 -Clean
+.\scripts\build_installer.ps1
+```
+
+构建产物位置：
+
+- 独立程序目录：`dist\PaddleOCRDesktopTool\`
+- Windows 安装包：`installer\Output\PaddleOCRDesktopTool-Setup-0.3.0.exe`
