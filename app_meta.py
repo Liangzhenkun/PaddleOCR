@@ -1,4 +1,6 @@
 APP_NAME = "PaddleOCR Desktop Tool"
 APP_PUBLISHER = "Liangzhenkun"
-APP_RELEASE_VERSION = "0.3.0"
+APP_RELEASE_VERSION = "0.3.1"
+APP_RELEASE_DATE = "2026-06-30"
 APP_SLUG = "PaddleOCRDesktopTool"
+APP_REPOSITORY_URL = "https://github.com/Liangzhenkun/PaddleOCR"

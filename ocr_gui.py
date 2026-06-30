@@ -26,7 +26,14 @@ import paddle
 import paddleocr
 from paddleocr import PPStructureV3, PaddleOCR, PaddleOCRVL
 
-from app_meta import APP_NAME, APP_RELEASE_VERSION, APP_SLUG
+from app_meta import (
+    APP_NAME,
+    APP_PUBLISHER,
+    APP_RELEASE_DATE,
+    APP_RELEASE_VERSION,
+    APP_REPOSITORY_URL,
+    APP_SLUG,
+)
 
 
 SOURCE_DIR = Path(__file__).resolve().parent
@@ -78,6 +85,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "update_starting": "Update check: starting",
         "update_contacting": "Update check: contacting upstream PaddleOCR repo",
         "update_unreachable": "Update check: could not reach the official PaddleOCR repo",
+        "update_unparsed": "Update check: connected, but could not parse the latest upstream version",
         "update_newer": "Update check: newer release available ({latest_version}), local is {local_version}",
         "update_current": "Update check: local version is current ({local_version})",
         "section_input": "1. Choose Input File",
@@ -91,6 +99,8 @@ TEXTS: dict[str, dict[str, str]] = {
         "button_open_output": "Open Output Folder",
         "button_open_markdown": "Open Markdown",
         "button_open_log": "Open Log",
+        "button_settings": "Settings",
+        "button_close": "Close",
         "status_ready": "Ready",
         "status_completed": "Completed",
         "status_failed": "Failed",
@@ -122,6 +132,37 @@ TEXTS: dict[str, dict[str, str]] = {
         "ocr_lang_ch": "Chinese",
         "ui_lang_en_US": "English",
         "ui_lang_zh_CN": "简体中文",
+        "settings_title": "Settings",
+        "settings_tab_general": "General",
+        "settings_tab_help": "Help",
+        "settings_tab_about": "About",
+        "settings_language": "Interface Language",
+        "help_text": (
+            "Quick Start\n\n"
+            "1. Choose an image or PDF.\n"
+            "2. Pick a model.\n"
+            "   PP-OCRv5: fastest plain text OCR.\n"
+            "   PP-StructureV3: recommended for PDFs and Markdown export.\n"
+            "   PaddleOCR-VL: stronger document understanding, but heavier.\n"
+            "3. Pick the document language.\n"
+            "4. Click Run and wait for the output folder.\n"
+            "5. Use Open Output Folder or Open Markdown to inspect the results.\n\n"
+            "Notes\n\n"
+            "- The first run of a model may take longer because official weights may need to be downloaded.\n"
+            "- After the model weights are downloaded, local OCR, Structure, and VL runs can continue offline.\n"
+            "- The desktop app stores logs, settings, and outputs in your local app data folder, not inside the installer package."
+        ),
+        "about_text": (
+            "{app_name}\n\n"
+            "Version: {app_version}\n"
+            "Release date: {release_date}\n"
+            "Author: {publisher}\n"
+            "Built on PaddleOCR {paddleocr_version} and Paddle {paddle_version}\n"
+            "GPU: {device_name}\n\n"
+            "Local data folder:\n{data_root}\n\n"
+            "Project page:\n{repo_url}\n\n"
+            "This desktop tool wraps official local PaddleOCR models for Windows use."
+        ),
     },
     "zh_CN": {
         "window_title": f"PaddleOCR 本地工具 {APP_RELEASE_VERSION}",
@@ -133,6 +174,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "update_starting": "更新检查：准备开始",
         "update_contacting": "更新检查：正在连接官方 PaddleOCR 仓库",
         "update_unreachable": "更新检查：无法连接官方 PaddleOCR 仓库",
+        "update_unparsed": "更新检查：已连上官方仓库，但暂时无法解析最新版本号",
         "update_newer": "更新检查：发现新版本（{latest_version}），当前本地版本为 {local_version}",
         "update_current": "更新检查：当前本地版本已是最新（{local_version}）",
         "section_input": "1. 选择输入文件",
@@ -146,6 +188,8 @@ TEXTS: dict[str, dict[str, str]] = {
         "button_open_output": "打开输出目录",
         "button_open_markdown": "打开 Markdown",
         "button_open_log": "打开日志",
+        "button_settings": "设置",
+        "button_close": "关闭",
         "status_ready": "就绪",
         "status_completed": "识别完成",
         "status_failed": "识别失败",
@@ -174,6 +218,37 @@ TEXTS: dict[str, dict[str, str]] = {
         "ocr_lang_ch": "中文",
         "ui_lang_en_US": "English",
         "ui_lang_zh_CN": "简体中文",
+        "settings_title": "设置",
+        "settings_tab_general": "常规",
+        "settings_tab_help": "帮助",
+        "settings_tab_about": "关于",
+        "settings_language": "界面语言",
+        "help_text": (
+            "快速开始\n\n"
+            "1. 选择图片或 PDF 文件。\n"
+            "2. 选择识别模型。\n"
+            "   PP-OCRv5：最快，适合纯文本提取。\n"
+            "   PP-StructureV3：更适合 PDF、教材和 Markdown 导出。\n"
+            "   PaddleOCR-VL：文档理解更强，但模型更重。\n"
+            "3. 选择文档识别语言。\n"
+            "4. 点击“开始识别”，等待输出目录生成。\n"
+            "5. 识别完成后，可直接打开输出目录或 Markdown 文件查看结果。\n\n"
+            "补充说明\n\n"
+            "- 某个模型第一次运行时，可能需要先下载官方权重，所以会更慢一些。\n"
+            "- 官方模型权重下载完成后，后续的 OCR、Structure 和 VL 识别都可以离线本地运行。\n"
+            "- 桌面版会把日志、设置和输出结果写入本机本地数据目录，不会打包进安装程序。"
+        ),
+        "about_text": (
+            "{app_name}\n\n"
+            "版本：{app_version}\n"
+            "发布日期：{release_date}\n"
+            "作者：{publisher}\n"
+            "基于 PaddleOCR {paddleocr_version} 与 Paddle {paddle_version}\n"
+            "GPU：{device_name}\n\n"
+            "本地数据目录：\n{data_root}\n\n"
+            "项目地址：\n{repo_url}\n\n"
+            "这是一个面向 Windows 的本地 PaddleOCR 桌面封装工具。"
+        ),
     },
 }
 
@@ -290,24 +365,27 @@ def installed_paddleocr_version() -> str:
     return str(getattr(paddleocr, "__version__", "0.0.0"))
 
 
-def fetch_latest_version_from_official_repo(timeout: int = 12) -> str | None:
+def fetch_latest_version_from_official_repo(
+    timeout: int = 12,
+) -> tuple[str | None, str]:
     try:
         response = requests.get(UPDATE_SOURCE_URL, timeout=timeout)
         response.raise_for_status()
     except Exception:
         logging.exception("Failed to check upstream PaddleOCR version")
-        return None
+        return None, "network_error"
 
-    patterns = (
-        r"^\s*PaddleOCR\s+(\d+\.\d+\.\d+)\s+发布",
-        r"^\s*PaddleOCR\s+(\d+\.\d+\.\d+)\s+Released",
-        r"^\s*PaddleOCR\s+(\d+\.\d+\.\d+)\b",
+    matches = re.findall(
+        r"PaddleOCR\s+(\d+\.\d+\.\d+)(?:\s+发布|\s+Released|\b)",
+        response.text,
+        flags=re.IGNORECASE,
     )
-    for pattern in patterns:
-        match = re.search(pattern, response.text, flags=re.MULTILINE)
-        if match:
-            return match.group(1)
-    return None
+    if not matches:
+        logging.warning("Connected to upstream README but could not parse PaddleOCR version")
+        return None, "parse_error"
+
+    latest = max((Version(value) for value in matches), default=None)
+    return (str(latest), "ok") if latest else (None, "parse_error")
 
 
 def normalize_ui_language(value: str | None) -> str:
@@ -626,6 +704,8 @@ class OCRApp:
         self.current_json_file: Path | None = None
         self.current_text_file: Path | None = None
         self.current_state = "ready"
+        self.is_running_job = False
+        self.is_checking_updates = False
         self.settings = load_settings()
         self.ui_language_code = normalize_ui_language(
             self.settings.get("ui_language") or detect_system_ui_language()
@@ -634,6 +714,17 @@ class OCRApp:
         self.model_label_to_key: dict[str, str] = {}
         self.ocr_lang_label_to_key: dict[str, str] = {}
         self.ui_lang_label_to_code: dict[str, str] = {}
+        self.settings_window: tk.Toplevel | None = None
+        self.settings_general_tab: ttk.Frame | None = None
+        self.settings_help_tab: ttk.Frame | None = None
+        self.settings_about_tab: ttk.Frame | None = None
+        self.settings_notebook: ttk.Notebook | None = None
+        self.settings_language_label: ttk.Label | None = None
+        self.settings_language_var = tk.StringVar()
+        self.settings_language_box: ttk.Combobox | None = None
+        self.settings_help_box: scrolledtext.ScrolledText | None = None
+        self.settings_about_box: scrolledtext.ScrolledText | None = None
+        self.settings_close_btn: ttk.Button | None = None
 
         self.file_var = tk.StringVar()
         self.model_key_var = tk.StringVar(value="ppstructurev3")
@@ -648,8 +739,8 @@ class OCRApp:
         self.update_var = tk.StringVar()
         self.runtime_var = tk.StringVar()
 
-        self.root.geometry("1120x820")
-        self.root.minsize(960, 700)
+        self.root.geometry("1120x760")
+        self.root.minsize(960, 640)
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self._build_ui()
@@ -721,6 +812,9 @@ class OCRApp:
         )
         self.ui_language_box.pack(anchor=tk.E, pady=(4, 0))
         self.ui_language_box.bind("<<ComboboxSelected>>", self._on_ui_language_selected)
+
+        self.settings_btn = ttk.Button(language_block, command=self.open_settings)
+        self.settings_btn.pack(anchor=tk.E, pady=(8, 0))
 
         ttk.Label(main, textvariable=self.runtime_var).pack(anchor=tk.W, pady=(6, 0))
         ttk.Label(main, textvariable=self.update_var).pack(anchor=tk.W, pady=(2, 14))
@@ -794,6 +888,7 @@ class OCRApp:
 
         self.progress = ttk.Progressbar(actions, mode="indeterminate", length=220)
         self.progress.pack(side=tk.RIGHT)
+        self.progress.pack_forget()
 
         status_frame = ttk.Frame(main)
         status_frame.pack(fill=tk.X, pady=(10, 0))
@@ -808,6 +903,7 @@ class OCRApp:
             self.result_frame,
             wrap=tk.WORD,
             font=("Consolas", 11),
+            height=16,
         )
         self.result_box.pack(fill=tk.BOTH, expand=True)
 
@@ -827,6 +923,7 @@ class OCRApp:
         self.open_btn.config(text=self._t("button_open_output"))
         self.open_md_btn.config(text=self._t("button_open_markdown"))
         self.open_log_btn.config(text=self._t("button_open_log"))
+        self.settings_btn.config(text=self._t("button_settings"))
         self.result_frame.config(text=self._t("section_preview"))
 
         if refresh_comboboxes:
@@ -837,6 +934,7 @@ class OCRApp:
         self.model_note_var.set(self._model_note(self.model_key_var.get()))
         self._refresh_runtime_text()
         self._refresh_static_status_text()
+        self._refresh_settings_window()
 
     def _refresh_static_status_text(self) -> None:
         if self.current_state == "running":
@@ -955,6 +1053,18 @@ class OCRApp:
         save_settings(self.settings)
         self._apply_language(refresh_comboboxes=True)
 
+    def _on_settings_ui_language_selected(
+        self, event: tk.Event[Any] | None = None
+    ) -> None:
+        label = event.widget.get() if event else self.settings_language_var.get()
+        code = self.ui_lang_label_to_code.get(label, "en_US")
+        if code == self.ui_language_code:
+            return
+        self.ui_language_code = code
+        self.settings["ui_language"] = code
+        save_settings(self.settings)
+        self._apply_language(refresh_comboboxes=True)
+
     def _sync_model_key(self, event: tk.Event[Any] | None = None) -> None:
         label = event.widget.get() if event else self.model_label_var.get()
         key = self.model_label_to_key.get(label, "ppstructurev3")
@@ -968,14 +1078,168 @@ class OCRApp:
         self.lang_var.set(key)
         self.lang_label_var.set(self._ocr_language_label(key))
 
+    def _set_busy_state(self) -> None:
+        is_busy = self.is_running_job or self.is_checking_updates
+        if is_busy:
+            if not self.progress.winfo_ismapped():
+                self.progress.pack(side=tk.RIGHT)
+            self.progress.start(12)
+            return
+
+        self.progress.stop()
+        if self.progress.winfo_ismapped():
+            self.progress.pack_forget()
+
     def _start_update_check(self) -> None:
+        if self.is_checking_updates:
+            return
+        self.is_checking_updates = True
+        self.check_update_btn.config(state=tk.DISABLED)
         self.update_var.set(self._t("update_contacting"))
+        self._set_busy_state()
         threading.Thread(target=self._check_updates_worker, daemon=True).start()
 
     def _check_updates_worker(self) -> None:
         local_version = installed_paddleocr_version()
-        latest_version = fetch_latest_version_from_official_repo()
-        self.events.put(("update_info", (local_version, latest_version)))
+        latest_version, status = fetch_latest_version_from_official_repo()
+        self.events.put(("update_info", (local_version, latest_version, status)))
+
+    def _help_text(self) -> str:
+        return self._t("help_text")
+
+    def _about_text(self) -> str:
+        device_name = self.device_name
+        if device_name == "CPU or unavailable":
+            device_name = self._t("runtime_unknown_gpu")
+        return self._t(
+            "about_text",
+            app_name=APP_NAME,
+            app_version=APP_RELEASE_VERSION,
+            release_date=APP_RELEASE_DATE,
+            publisher=APP_PUBLISHER,
+            paddleocr_version=installed_paddleocr_version(),
+            paddle_version=paddle.__version__,
+            device_name=device_name,
+            data_root=DATA_ROOT,
+            repo_url=APP_REPOSITORY_URL,
+        )
+
+    def open_settings(self) -> None:
+        if self.settings_window and self.settings_window.winfo_exists():
+            self.settings_window.deiconify()
+            self.settings_window.lift()
+            self.settings_window.focus_force()
+            return
+
+        self.settings_window = tk.Toplevel(self.root)
+        self.settings_window.geometry("680x520")
+        self.settings_window.minsize(620, 460)
+        self.settings_window.transient(self.root)
+        self.settings_window.protocol("WM_DELETE_WINDOW", self._close_settings_window)
+
+        container = ttk.Frame(self.settings_window, padding=14)
+        container.pack(fill=tk.BOTH, expand=True)
+
+        self.settings_notebook = ttk.Notebook(container)
+        self.settings_notebook.pack(fill=tk.BOTH, expand=True)
+
+        self.settings_general_tab = ttk.Frame(self.settings_notebook, padding=14)
+        self.settings_help_tab = ttk.Frame(self.settings_notebook, padding=14)
+        self.settings_about_tab = ttk.Frame(self.settings_notebook, padding=14)
+        self.settings_notebook.add(self.settings_general_tab)
+        self.settings_notebook.add(self.settings_help_tab)
+        self.settings_notebook.add(self.settings_about_tab)
+
+        self.settings_language_label = ttk.Label(self.settings_general_tab)
+        self.settings_language_label.grid(row=0, column=0, sticky="w")
+
+        self.settings_language_box = ttk.Combobox(
+            self.settings_general_tab,
+            textvariable=self.settings_language_var,
+            state="readonly",
+            width=18,
+        )
+        self.settings_language_box.grid(row=0, column=1, sticky="w", padx=(12, 0))
+        self.settings_language_box.bind(
+            "<<ComboboxSelected>>", self._on_settings_ui_language_selected
+        )
+
+        self.settings_help_box = scrolledtext.ScrolledText(
+            self.settings_help_tab,
+            wrap=tk.WORD,
+            font=("Segoe UI", 10),
+        )
+        self.settings_help_box.pack(fill=tk.BOTH, expand=True)
+
+        self.settings_about_box = scrolledtext.ScrolledText(
+            self.settings_about_tab,
+            wrap=tk.WORD,
+            font=("Segoe UI", 10),
+        )
+        self.settings_about_box.pack(fill=tk.BOTH, expand=True)
+
+        footer = ttk.Frame(container)
+        footer.pack(fill=tk.X, pady=(10, 0))
+
+        self.settings_close_btn = ttk.Button(footer, command=self._close_settings_window)
+        self.settings_close_btn.pack(side=tk.RIGHT)
+
+        self._refresh_settings_window()
+
+    def _refresh_settings_window(self) -> None:
+        if not self.settings_window or not self.settings_window.winfo_exists():
+            return
+
+        self.settings_window.title(self._t("settings_title"))
+
+        if self.settings_notebook and self.settings_general_tab:
+            self.settings_notebook.tab(
+                self.settings_general_tab, text=self._t("settings_tab_general")
+            )
+        if self.settings_notebook and self.settings_help_tab:
+            self.settings_notebook.tab(
+                self.settings_help_tab, text=self._t("settings_tab_help")
+            )
+        if self.settings_notebook and self.settings_about_tab:
+            self.settings_notebook.tab(
+                self.settings_about_tab, text=self._t("settings_tab_about")
+            )
+
+        if self.settings_language_label:
+            self.settings_language_label.config(text=self._t("settings_language"))
+        if self.settings_language_box:
+            values = [self._ui_language_label(code) for code in SUPPORTED_UI_LANGUAGES]
+            self.settings_language_box.config(values=values)
+        self.settings_language_var.set(self._ui_language_label(self.ui_language_code))
+
+        if self.settings_help_box:
+            self.settings_help_box.config(state=tk.NORMAL)
+            self.settings_help_box.delete("1.0", tk.END)
+            self.settings_help_box.insert(tk.END, self._help_text())
+            self.settings_help_box.config(state=tk.DISABLED)
+
+        if self.settings_about_box:
+            self.settings_about_box.config(state=tk.NORMAL)
+            self.settings_about_box.delete("1.0", tk.END)
+            self.settings_about_box.insert(tk.END, self._about_text())
+            self.settings_about_box.config(state=tk.DISABLED)
+
+        if self.settings_close_btn:
+            self.settings_close_btn.config(text=self._t("button_close"))
+
+    def _close_settings_window(self) -> None:
+        if self.settings_window and self.settings_window.winfo_exists():
+            self.settings_window.destroy()
+        self.settings_window = None
+        self.settings_general_tab = None
+        self.settings_help_tab = None
+        self.settings_about_tab = None
+        self.settings_notebook = None
+        self.settings_language_label = None
+        self.settings_language_box = None
+        self.settings_help_box = None
+        self.settings_about_box = None
+        self.settings_close_btn = None
 
     def pick_file(self) -> None:
         path = filedialog.askopenfilename(
@@ -1028,6 +1292,7 @@ class OCRApp:
         self.current_json_file = None
         self.current_text_file = None
         self.current_state = "running"
+        self.is_running_job = True
         self.output_var.set(self._t("output_running"))
         self.file_hint_var.set(self._t("files_generating"))
         self.status_var.set(self._t("status_running", model_label=model_label))
@@ -1036,7 +1301,7 @@ class OCRApp:
         self.start_btn.config(state=tk.DISABLED)
         self.open_btn.config(state=tk.DISABLED)
         self.open_md_btn.config(state=tk.DISABLED)
-        self.progress.start(12)
+        self._set_busy_state()
 
         threading.Thread(
             target=self._run_worker,
@@ -1066,6 +1331,7 @@ class OCRApp:
                 self.current_json_file = result.json_file
                 self.current_text_file = result.primary_text_file
                 self.current_state = "completed"
+                self.is_running_job = False
 
                 self.status_var.set(self._t("status_completed"))
                 self.output_var.set(self._t("output_generated", path=result.output_dir))
@@ -1088,25 +1354,31 @@ class OCRApp:
                 if result.markdown_file:
                     self.open_md_btn.config(state=tk.NORMAL)
 
-                self.progress.stop()
                 self.start_btn.config(state=tk.NORMAL)
+                self._set_busy_state()
 
             elif event_type == "error":
                 self.current_state = "failed"
+                self.is_running_job = False
                 self.status_var.set(self._t("status_failed"))
                 self.output_var.set(self._t("output_not_generated"))
                 self.file_hint_var.set(self._t("files_not_generated"))
-                self.progress.stop()
                 self.start_btn.config(state=tk.NORMAL)
+                self._set_busy_state()
                 messagebox.showerror(
                     self._t("run_failed_title"),
                     self._t("run_failed_body", error=payload),
                 )
 
             elif event_type == "update_info":
-                local_version, latest_version = payload
-                if not latest_version:
+                local_version, latest_version, status = payload
+                self.is_checking_updates = False
+                self.check_update_btn.config(state=tk.NORMAL)
+                self._set_busy_state()
+                if status == "network_error":
                     self.update_var.set(self._t("update_unreachable"))
+                elif status == "parse_error":
+                    self.update_var.set(self._t("update_unparsed"))
                 elif Version(latest_version) > Version(local_version):
                     self.update_var.set(
                         self._t(
@@ -1126,6 +1398,7 @@ class OCRApp:
         try:
             self.backend.close()
         finally:
+            self._close_settings_window()
             self.root.destroy()
 
 

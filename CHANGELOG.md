@@ -8,6 +8,25 @@ The format is inspired by Keep a Changelog, with lightweight version notes for t
 
 - Sanitized the public README visuals and removed screenshots that exposed local desktop context.
 
+## [0.3.1] - 2026-06-30
+
+### Fixed
+
+- Corrected upstream version parsing so update checks no longer misreport reachable repositories as connection failures
+- Hid the progress indicator when the app is idle instead of showing a stray green block at startup
+- Added safer uninstall cleanup rules for the packaged Windows installer to better remove `PaddleOCRDesktopTool.exe` and `_internal`
+
+### Added
+
+- New Settings window with General / Help / About tabs
+- In-app About information with author, version, release date, and project URL
+- Quick usage help inside the desktop app
+
+### Changed
+
+- Slightly reduced the default main-window height so the preview area feels less oversized
+- Simplified installer language setup to a single choice by reusing the installer language as the app's initial language
+
 ## [0.3.0] - 2026-06-30
 
 ### Added

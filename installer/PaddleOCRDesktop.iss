@@ -1,7 +1,7 @@
 #define MyAppName "PaddleOCR Desktop Tool"
 #define MyAppExeName "PaddleOCRDesktopTool.exe"
 #define MyAppPublisher "Liangzhenkun"
-#define MyAppVersion "0.3.0"
+#define MyAppVersion "0.3.1"
 
 [Setup]
 AppId={{A252862A-0766-4338-9E6B-74D483267145}
@@ -21,6 +21,8 @@ WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\{#MyAppExeName}
+CloseApplications=yes
+RestartApplications=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -39,39 +41,11 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
 
-[CustomMessages]
-english.AppLangPageTitle=Application language
-english.AppLangPageDescription=Choose the default interface language used by the desktop app.
-english.AppLangChinese=Simplified Chinese
-english.AppLangEnglish=English
-simplifiedchinese.AppLangPageTitle=软件界面语言
-simplifiedchinese.AppLangPageDescription=请选择软件默认使用的界面语言。
-simplifiedchinese.AppLangChinese=简体中文
-simplifiedchinese.AppLangEnglish=English
+[UninstallDelete]
+Type: files; Name: "{app}\{#MyAppExeName}"
+Type: filesandordirs; Name: "{app}\_internal"
 
 [Code]
-var
-  AppLangPage: TInputOptionWizardPage;
-
-procedure InitializeWizard;
-begin
-  AppLangPage := CreateInputOptionPage(
-    wpSelectDir,
-    ExpandConstant('{cm:AppLangPageTitle}'),
-    ExpandConstant('{cm:AppLangPageDescription}'),
-    '',
-    True,
-    False
-  );
-  AppLangPage.Add(ExpandConstant('{cm:AppLangChinese}'));
-  AppLangPage.Add(ExpandConstant('{cm:AppLangEnglish}'));
-
-  if ActiveLanguage = 'simplifiedchinese' then
-    AppLangPage.SelectedValueIndex := 0
-  else
-    AppLangPage.SelectedValueIndex := 1;
-end;
-
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   SettingsDir: string;
@@ -81,7 +55,7 @@ var
 begin
   if CurStep = ssPostInstall then
   begin
-    if AppLangPage.SelectedValueIndex = 0 then
+    if ActiveLanguage = 'simplifiedchinese' then
       AppLangCode := 'zh_CN'
     else
       AppLangCode := 'en_US';

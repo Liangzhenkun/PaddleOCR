@@ -103,7 +103,7 @@ Each run creates a timestamped subfolder. Common files include:
 Build outputs:
 
 - EXE folder: `dist\PaddleOCRDesktopTool\`
-- Installer: `installer\Output\PaddleOCRDesktopTool-Setup-0.3.0.exe`
+- Installer: `installer\Output\PaddleOCRDesktopTool-Setup-0.3.1.exe`
 
 ---
 
@@ -212,4 +212,4 @@ outputs\
 构建产物位置：
 
 - 独立程序目录：`dist\PaddleOCRDesktopTool\`
-- Windows 安装包：`installer\Output\PaddleOCRDesktopTool-Setup-0.3.0.exe`
+- Windows 安装包：`installer\Output\PaddleOCRDesktopTool-Setup-0.3.1.exe`
